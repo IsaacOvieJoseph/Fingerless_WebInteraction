@@ -12,17 +12,34 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const SpeechRecognition = window.webkitSpeechRecognition;
     const recognition = new SpeechRecognition();
-    recognition.continuous = false;
+    recognition.continuous = true; // Set to true for continuous listening
     recognition.lang = 'en-US';
     recognition.interimResults = false;
     recognition.maxAlternatives = 1;
 
+    let isListening = false; // Track the listening state
+
     startRecognitionBtn.addEventListener('click', () => {
-        recognition.start();
-        statusDiv.textContent = 'Listening...';
-        outputDiv.textContent = 'Say a command...';
-        startRecognitionBtn.disabled = true;
+        if (!isListening) {
+            recognition.start();
+            statusDiv.textContent = 'Listening...';
+            outputDiv.textContent = 'Say a command...';
+            startRecognitionBtn.textContent = 'Stop Listening';
+            isListening = true;
+        } else {
+            recognition.stop();
+            statusDiv.textContent = 'Stopped listening.';
+            startRecognitionBtn.textContent = 'Start Listening';
+            isListening = false;
+        }
+        startRecognitionBtn.disabled = false; // Ensure button is not disabled during toggle
     });
+
+    recognition.onstart = () => {
+        isListening = true;
+        startRecognitionBtn.textContent = 'Stop Listening';
+        statusDiv.textContent = 'Listening...';
+    };
 
     recognition.onresult = (event) => {
         const transcript = event.results[0][0].transcript;
@@ -34,14 +51,16 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     recognition.onend = () => {
+        isListening = false;
+        startRecognitionBtn.textContent = 'Start Listening';
         statusDiv.textContent = 'Recognition ended.';
-        startRecognitionBtn.disabled = false;
     };
 
     recognition.onerror = (event) => {
+        isListening = false;
+        startRecognitionBtn.textContent = 'Start Listening';
         statusDiv.textContent = `Error: ${event.error}`;
         console.error('Speech recognition error:', event.error);
-        startRecognitionBtn.disabled = false;
     };
 
     async function processSpeechCommand(command) {
@@ -64,7 +83,8 @@ document.addEventListener('DOMContentLoaded', () => {
             statusDiv.textContent = 'Error communicating with backend.';
             console.error('Error sending command to backend:', error);
         }
-        startRecognitionBtn.disabled = false;
+        // Do not disable the button after processing a command in continuous mode
+        // startRecognitionBtn.disabled = false;
     }
 
     function executeAction(action) {
@@ -80,7 +100,51 @@ document.addEventListener('DOMContentLoaded', () => {
             } else if (action.direction === 'up') {
                 window.scrollBy(0, -window.innerHeight / 2); // Scroll half a screen height up
             }
+        } else if (action.type === 'click') {
+            findAndClickElement(action.target);
+        } else if (action.type === 'fill') {
+            fillFormField(action.field, action.value);
         }
         // Add more action types as needed (e.g., click, fill form, etc.)
+    }
+
+    function findAndClickElement(text) {
+        const elements = document.querySelectorAll('button, a, input[type="submit"], [role="button"], [tabindex="0"]');
+        let clicked = false;
+
+        for (const element of elements) {
+            if (element.textContent.toLowerCase().includes(text.toLowerCase())) {
+                element.click();
+                statusDiv.textContent = `Clicked on: ${element.textContent.trim()}`;
+                clicked = true;
+                break;
+            }
+        }
+
+        if (!clicked) {
+            statusDiv.textContent = `Could not find an element to click with text: "${text}"`;
+        }
+    }
+
+    function fillFormField(fieldName, value) {
+        const inputElements = document.querySelectorAll('input, textarea, select');
+        let filled = false;
+
+        for (const element of inputElements) {
+            // Check for id, name, or placeholder match
+            if (element.id.toLowerCase().includes(fieldName.toLowerCase()) ||
+                element.name.toLowerCase().includes(fieldName.toLowerCase()) ||
+                (element.placeholder && element.placeholder.toLowerCase().includes(fieldName.toLowerCase()))
+            ) {
+                element.value = value;
+                statusDiv.textContent = `Typed \"${value}\" into field: ${element.id || element.name || element.placeholder}`;
+                filled = true;
+                break;
+            }
+        }
+
+        if (!filled) {
+            statusDiv.textContent = `Could not find a form field matching: "${fieldName}"`;
+        }
     }
 });
