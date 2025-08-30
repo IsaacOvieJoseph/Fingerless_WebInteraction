@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hands-Free Web Assistant</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Hands-Free Web Assistant</h1>
+        <button id="startRecognition">Start Listening</button>
+        <p id="output">Say a command...</p>
+        <p id="status"></p>
+    </div>
+
+    <iframe id="browsingFrame" src="about:blank" style="width: 100%; height: 80vh; border: none; display: none;"></iframe>
+
+    <script src="app.js"></script>
+</body>
+</html>
